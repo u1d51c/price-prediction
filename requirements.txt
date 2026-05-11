@@ -1,0 +1,47 @@
+# Базовые библиотеки для работы с данными
+numpy==2.0.2
+pandas==2.3.3
+scipy==1.13.1
+
+# Визуализация
+matplotlib==3.9.4
+seaborn==0.13.2
+plotly==6.7.0
+
+# Финансовые данные
+yfinance==1.2.0
+requests==2.32.5
+
+# Машинное обучение и эконометрика
+scikit-learn==1.6.1
+statsmodels==0.14.6
+
+# NLP (baseline-инструменты для EDA; FinBERT/CrudeBERT подключим позже на DL-этапе)
+nltk==3.9.2
+vaderSentiment==3.3.2
+
+# Notebooks
+jupyter==1.1.1
+ipykernel==6.31.0
+nbformat==5.10.4
+
+# Утилиты
+python-dotenv==1.2.1
+tqdm==4.67.3
+tenacity==9.1.2
+PyYAML==6.0.2
+pyarrow==21.0.0
+
+# Сервис (CP4): FastAPI + хранилище + JWT + миграции
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+SQLAlchemy==2.0.35
+alembic==1.13.3
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1               # passlib 1.7.4 несовместим с bcrypt >=4.1
+python-multipart==0.0.10
+joblib==1.5.3
+httpx==0.28.1               # для тестов и Swagger TestClient

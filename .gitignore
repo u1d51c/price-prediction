@@ -1,0 +1,49 @@
+# Виртуальные окружения
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Данные: сырые большие файлы не коммитим, только metadata
+data/raw/*
+data/processed/*
+data/external/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# Секреты / API-ключи
+.env
+.env.local
+configs/secrets.yaml
+
+# Артефакты обучения
+models/*.pkl
+models/*.pt
+models/*.joblib
+models/*.meta.json
+!models/.gitkeep
+mlruns/
+wandb/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp

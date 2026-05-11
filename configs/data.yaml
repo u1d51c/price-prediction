@@ -1,0 +1,74 @@
+# =============================================================================
+# Конфигурация данных проекта
+# =============================================================================
+# Тикеры выбраны по принципу "максимальная ликвидность + бесплатные данные".
+# Brent (BZ=F) и WTI (CL=F) - месячные фьючерсы на Yahoo Finance.
+# BTC-USD — спот биткоина в долларах (агрегат бирж).
+#
+# Период: 7 лет дневных свечей. Берём с запасом - Hashamia & Maldonado (2025)
+# работают на десятилетнем окне 2014–2024 [arXiv:2508.20707, с.4],
+# Elshendy et al. (2021) — на двух годах [arXiv:2105.09154].
+
+assets:
+  brent:
+    ticker: "BZ=F"          # Brent Crude Oil front-month futures
+    name: "Brent Crude Oil"
+    type: "commodity"
+    currency: "USD"
+  wti:
+    ticker: "CL=F"          # WTI Crude Oil front-month futures
+    name: "WTI Crude Oil"
+    type: "commodity"
+    currency: "USD"
+  btc:
+    ticker: "BTC-USD"        # Bitcoin spot
+    name: "Bitcoin"
+    type: "crypto"
+    currency: "USD"
+
+# Период сбора цен
+prices:
+  start_date: "2018-01-01"
+  end_date: null              # null = по сегодняшний день
+  interval: "1d"              # дневной таймфрейм
+  cache_dir: "data/raw/prices"
+
+# Конфигурация таргета (направление движения)
+# Трёхклассовая разметка: up / down / flat.
+# Порог flat = ±tau от 0 на log-returns; tau подбирается так, чтобы класс flat
+# составлял ~10–20% выборки (по умолчанию tau = 0.1·sigma_log_ret).
+target:
+  horizon_days: 1            # предсказываем направление на следующий день
+  log_returns: true          # лог-доходности (стандарт в литературе)
+  flat_threshold_sigma: 0.1  # порог flat в долях стандартного отклонения доходности
+
+# Текстовые источники
+texts:
+  gdelt:
+    enabled: true
+    # GDELT GKG 2.0 — открытый сервис, ключ не нужен.
+    # Doc API: https://api.gdeltproject.org/api/v2/doc/doc
+    queries:
+      # GDELT требует >=4 буквы у токенов вне кавычек; WTI/BTC слишком короткие.
+      # WTI ловим через "WTI crude" (фраза в кавычках), BTC — через bitcoin.
+      oil: '("crude oil" OR "WTI crude" OR brent OR OPEC OR petroleum)'
+      btc: '(bitcoin OR cryptocurrency OR "BTC price")'
+    languages: ["english"]
+    max_records_per_day: 250
+  newsapi:
+    enabled: false             # включить, если есть ключ в .env
+    queries:
+      oil: 'crude oil OR brent OR WTI OR OPEC'
+      btc: 'bitcoin OR cryptocurrency'
+    page_size: 100
+  reddit:
+    enabled: false             # включить, если есть API-ключ
+    subreddits:
+      oil: ["commodities", "energy", "investing", "stocks"]
+      btc: ["Bitcoin", "CryptoCurrency", "BitcoinMarkets"]
+    limit_per_subreddit: 1000
+
+# Пути хранения текстов
+texts_storage:
+  raw_dir: "data/raw/texts"
+  processed_dir: "data/processed/texts"
