@@ -52,7 +52,11 @@ class FinBertScorer:
 
     @torch.no_grad()
     def score(self, texts: Iterable[str]) -> pd.DataFrame:
-        """Прогоняет тексты через модель батчами, возвращает вероятности классов."""
+        """Прогоняет тексты через модель батчами, возвращает вероятности классов.
+
+        Подходит для коротких текстов (заголовки до 64 токенов). Для длинных
+        body статей используйте score_long().
+        """
         self._ensure_loaded()
         texts = [str(t) if t is not None else "" for t in texts]
         if not texts:
@@ -71,6 +75,50 @@ class FinBertScorer:
         # сопоставляем колонки именам классов модели; на случай если порядок поменяется в будущем
         cols = {f"p_{self.id2label[i][:3]}": probs[:, i] for i in range(probs.shape[1])}
         return pd.DataFrame(cols)
+
+    @torch.no_grad()
+    def score_long(self, texts: Iterable[str], chunk_tokens: int = 510) -> pd.DataFrame:
+        """Прогоняет длинные тексты с chunking-усреднением.
+
+        BERT-base принимает максимум 512 токенов. Для статей это мало, поэтому
+        режем body на куски длиной chunk_tokens, считаем FinBERT по каждому
+        куску и усредняем softmax-вероятности. Возвращает те же три колонки.
+        """
+        self._ensure_loaded()
+        rows = []
+        for t in texts:
+            t = str(t) if t else ""
+            if not t.strip():
+                rows.append({"p_pos": 0.0, "p_neg": 0.0, "p_neu": 0.0})
+                continue
+
+            # токенизируем без обрезания, чтобы получить весь набор token_ids
+            ids = self._tokenizer.encode(t, add_special_tokens=False)
+            if not ids:
+                rows.append({"p_pos": 0.0, "p_neg": 0.0, "p_neu": 0.0})
+                continue
+
+            # режем на чанки по chunk_tokens
+            chunks = [ids[i: i + chunk_tokens] for i in range(0, len(ids), chunk_tokens)]
+            chunk_probs = []
+            for c in chunks:
+                # обрамляем CLS/SEP, чтобы модель видела стандартные spec-токены
+                input_ids = torch.tensor(
+                    [[self._tokenizer.cls_token_id] + c + [self._tokenizer.sep_token_id]],
+                    device=self.device,
+                )
+                attn = torch.ones_like(input_ids)
+                logits = self._model(input_ids=input_ids, attention_mask=attn).logits
+                chunk_probs.append(torch.softmax(logits, dim=-1).cpu().numpy()[0])
+            avg = np.mean(chunk_probs, axis=0)
+
+            label_to_prob = {self.id2label[i]: float(avg[i]) for i in range(len(avg))}
+            rows.append({
+                "p_pos": label_to_prob.get("positive", 0.0),
+                "p_neg": label_to_prob.get("negative", 0.0),
+                "p_neu": label_to_prob.get("neutral", 0.0),
+            })
+        return pd.DataFrame(rows)
 
 
 def daily_finbert_signals(

@@ -1,0 +1,13 @@
+# Hydra-конфиг для тестового predict через PRD-модель из MLflow.
+
+# актив
+asset: btc
+
+# сколько последних дней показать
+last_n_days: 5
+
+# имя зарегистрированной модели в MLflow (создаётся train_with_mlflow.py)
+model_name: "${asset}_direction_model"
+# тег, по которому ищем версию для PRD
+prd_tag_key: "stage"
+prd_tag_value: "PRD"

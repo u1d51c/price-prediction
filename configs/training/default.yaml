@@ -1,0 +1,41 @@
+# Hydra-конфиг для переобучения PRD-модели.
+# Запуск:
+#   python -m src.training.train_with_mlflow asset=btc seed=42 model.n_estimators=400
+
+defaults:
+  - _self_
+
+# на каком активе учим (brent / wti / btc)
+asset: btc
+
+# воспроизводимость
+seed: 42
+
+# граница train/test
+split_date: "2024-01-01"
+
+# набор фичей
+feature_set:
+  base: true        # ценовые (PRICE_FEATURE_COLS)
+  text_basic: true  # article_count / article_norm / avg_tone
+  text_advanced: true  # лаги, дельты, z21
+  cross_asset: true  # spread Brent-WTI (только для oil)
+  regime: true       # k-means кластерный режим
+  finbert_title: false  # дневной FinBERT-compound по title
+  finbert_body: false   # дневной FinBERT-compound по body
+
+# гиперпараметры RandomForest (лучшее из чекпоинта 5)
+model:
+  name: random_forest
+  n_estimators: 400
+  max_depth: 8
+  min_samples_leaf: 10
+  class_weight: balanced
+
+# MLflow
+mlflow:
+  run_name: "prd-rf-${asset}"
+  tags:
+    stage: PRD
+    cp: "7"
+    framework: sklearn

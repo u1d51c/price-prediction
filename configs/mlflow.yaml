@@ -1,0 +1,9 @@
+# Подключение к локальному MLflow + MinIO, поднятым через docker/docker-compose.yml
+
+mlflow:
+  tracking_uri: "http://localhost:5001"
+  experiment_name: "price_direction_prediction"
+  # эти переменные нужны boto3 для общения с MinIO как с S3
+  s3_endpoint_url: "http://localhost:9000"
+  aws_access_key_id: "minioadmin"
+  aws_secret_access_key: "minioadmin"

@@ -194,6 +194,44 @@ def forward_live(
         raise HTTPException(status_code=403, detail="модель не смогла обработать данные") from exc
 
 
+# --- /predict/{asset} (PRD-модель из MLflow) ---------------------------
+
+@app.get("/predict/{asset}",
+         responses={403: {"description": "модель не смогла обработать данные"}})
+def predict_prd(
+    asset: str,
+    n_days: int = Query(default=1, ge=1, le=30),
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_current_user),
+):
+    """Прогноз PRD-моделью из MLflow Registry на последние n_days дней.
+
+    Это основной production-эндпоинт чекпоинта 7: модель берётся не из
+    локального joblib, а из MLflow по тегу stage=PRD, фичи собираются
+    тем же пайплайном, что и при обучении.
+    """
+    t0 = time.perf_counter()
+    if asset not in ("brent", "wti", "btc"):
+        raise HTTPException(status_code=400, detail="bad request: asset must be brent/wti/btc")
+    try:
+        from src.inference.core import predict_latest
+        result = predict_latest(asset, n_days=n_days)
+        elapsed = (time.perf_counter() - t0) * 1000
+        result["processing_ms"] = elapsed
+        _log_request(db, endpoint="/predict", asset=asset,
+                     payload={"asset": asset, "n_days": n_days}, response=result,
+                     status_code=200, processing_ms=elapsed,
+                     user=user.username if user else None)
+        return result
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        elapsed = (time.perf_counter() - t0) * 1000
+        _log_request(db, endpoint="/predict", asset=asset,
+                     payload={"asset": asset, "n_days": n_days}, response=None,
+                     status_code=403, processing_ms=elapsed,
+                     user=user.username if user else None, error_text=str(exc))
+        raise HTTPException(status_code=403, detail="модель не смогла обработать данные") from exc
+
+
 # --- /history ----------------------------------------------------------
 
 @app.get("/history", response_model=HistoryResponse)
